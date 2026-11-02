@@ -728,3 +728,60 @@ function renderEditor(){
     wrap.appendChild(box);
   });
 }
+function gateEditorHTML(li, part, g){
+  const ph = part==='morning'?'🌅 Утро':'🌆 Вечер';
+  return `
+  <div class="gate-row">
+    <b>${ph}</b>
+    <div class="edrow"><label>Иконка</label><input value="${esc(g.icon)}" oninput="edDraft.levels[${li}].${part}.icon=this.value"></div>
+    <div class="edrow"><label>Метка</label><input value="${esc(g.label)}" oninput="edDraft.levels[${li}].${part}.label=this.value"></div>
+    <div class="edrow"><label>День</label><input type="number" min="1" value="${g.day}" oninput="edDraft.levels[${li}].${part}.day=Math.max(1,parseInt(this.value)||1)"></div>
+    <div class="edrow"><label>X,%</label><input type="number" min="5" max="90" value="${g.pos[0]}" oninput="edDraft.levels[${li}].${part}.pos[0]=clamp(parseFloat(this.value)||5,5,90)"></div>
+    <div class="edrow"><label>Y,%</label><input type="number" min="15" max="85" value="${g.pos[1]}" oninput="edDraft.levels[${li}].${part}.pos[1]=clamp(parseFloat(this.value)||15,15,85)"></div>
+  </div>`;
+}
+function esc(s){ return String(s).replace(/"/g,'&quot;'); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function edAddLevel(){
+  edDraft.levels.push({ name:'Новый уровень',
+    morning:{day:1,icon:'🌅',pos:[25,30],label:'Утро'},
+    evening:{day:1,icon:'🌆',pos:[75,30],label:'Вечер'},
+    bowl:{pos:[50,55],icon:BOWL_CFG.icon} });
+  renderEditor();
+}
+function edDeleteLevel(li){
+  if(!confirm(`Удалить уровень «${edDraft.levels[li].name}»?`)) return;
+  edDraft.levels.splice(li,1); renderEditor();
+}
+function edSave(){
+  if(!edDraft.levels.length){ alert('Нужен хотя бы один уровень'); return; }
+  edDraft.levels.forEach(L=>{ if(!L.bowl) L.bowl={pos:[50,55],icon:BOWL_CFG.icon}; });
+  CONFIG = edDraft; saveConfig(CONFIG);
+  reconcileProgress(); drawGates(); updateHUD();
+  unlockAch('editor_use');
+  showMsg('💾 Конфиг сохранён','Изменения применены.');
+  closeEditor();
+}
+function edExport(){ prompt('JSON конфига:', JSON.stringify(CONFIG,null,2)); }
+function edImport(){
+  const raw = prompt('Вставь JSON:');
+  if(!raw) return;
+  try {
+    const p = JSON.parse(raw);
+    if(!Array.isArray(p.levels)) throw new Error('нет levels');
+    edDraft = p; renderEditor();
+    alert('Импортировано в черновик. Нажми «Применить».');
+  } catch(e){ alert('Ошибка: '+e.message); }
+}
+function edShareLevel(){
+  try {
+    const code = 'cat1:' + btoa(unescape(encodeURIComponent(JSON.stringify(CONFIG))));
+    prompt('Код твоего уровня:', code);
+    unlockAch('share_level');
+  } catch(e){ alert('Не удалось создать код: '+e.message); }
+}
+function edResetProgress(){
+  if(!confirm('Сбросить весь прогресс прохождения?')) return;
+  PROGRESS = { levels: [] }; reconcileProgress(); drawGates(); updateHUD();
+  alert('Прогресс сброшен');
+  }
