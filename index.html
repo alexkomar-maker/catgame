@@ -586,3 +586,73 @@ function playSound(kind){
     }
   } catch(e){}
      }
+// ============================================================
+//  КОРМЛЕНИЕ
+// ============================================================
+function feedCat(li){
+  const p = PROGRESS.levels[li];
+  if(!(p.morning && p.evening) || p.bowl) return;
+  p.bowl = true;
+  saveProgress(PROGRESS);
+  drawGates(); updateHUD();
+  unlockAch('bowl_eat');
+  const isGarmoshka = EASTER.garmoshka;
+  if(isGarmoshka){ playSound('garmoshka'); say(LINES.garmoshkaEat, 3000); }
+  else { playSound(BOWL_CFG.sound); say(BOWL_CFG.victory || LINES.victory, 2600); }
+  const L = CONFIG.levels[li];
+  const hasNext = li+1 < CONFIG.levels.length;
+  const isLast = !hasNext;
+  const title = isGarmoshka ? '🪗 ' + LINES.garmoshka : '🍖 ' + (BOWL_CFG.victory || LINES.victory);
+  if(isLast){
+    showMsg(title, `Котик поел и счастлив!\n🎉 Все уровни пройдены!\n\n${LINES.delta}`);
+    unlockAch('all_levels');
+    unlockAch('first_level');
+  } else {
+    showMsg(title, `Котик поел и доволен!\nУровень «${L.name}» завершён.\n\nСледующий: «${CONFIG.levels[li+1].name}».`);
+    unlockAch('first_level');
+  }
+}
+
+// ============================================================
+//  HUD
+// ============================================================
+function updateHUD(){
+  const d = new Date();
+  document.getElementById('timeInfo').textContent = `🕐 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('timeLeft').textContent = timeToSwitch();
+  const ph = document.getElementById('phase');
+  ph.textContent = phaseLabel();
+  ph.className = isMorning() ? 'phase-morning' : 'phase-evening';
+  Object.assign(ph.style,{position:'absolute',top:'50px',left:'50%',transform:'translateX(-50%)',padding:'6px 16px',borderRadius:'20px',fontSize:'13px',fontWeight:'bold',zIndex:'10'});
+  const li = currentLevelIndex();
+  if(li === -1){
+    document.getElementById('levelInfo').textContent = 'Все уровни 🏆';
+    document.getElementById('chapterBox').textContent = 'Котик накормлен, игра пройдена!';
+    return;
+  }
+  const L = CONFIG.levels[li], p = PROGRESS.levels[li];
+  const lvlDay = currentDayOfLevel(li);
+  document.getElementById('levelInfo').textContent = `Уровень ${li+1}/${CONFIG.levels.length}`;
+  let line;
+  if(p.morning && p.evening && !p.bowl) line = `<b>«${L.name}»</b><br>🎯 Найди миску!${EASTER.garmoshka?' 🪗':''}`;
+  else {
+    const nextPart = p.morning ? 'evening' : 'morning';
+    const g = L[nextPart];
+    const phaseNeed = nextPart==='morning' ? '🌅 утро' : '🌆 вечер';
+    const wait = Math.max(0, g.day - lvlDay);
+    let tail = '';
+    if(wait>0) tail = ` · через ${wait} дн.`;
+    else if(nextPart !== (isMorning()?'morning':'evening')) tail = ' · смени фазу';
+    line = `<b>«${L.name}»</b><br>День: ${lvlDay} · следующее: ${phaseNeed}${tail}`;
+  }
+  document.getElementById('chapterBox').innerHTML = line;
+}
+
+function showMsg(t, x){ document.getElementById('msgTitle').textContent=t; document.getElementById('msgText').textContent=x; document.getElementById('msg').style.display='block'; }
+function closeMsg(){ document.getElementById('msg').style.display='none'; }
+
+let catPos = {x:48, y:50};
+function updateCat(){ cat.style.left=catPos.x+'%'; cat.style.top=catPos.y+'%'; updateBubblePosition(); }
+const joy=document.getElementById('joy'), stick=document.getElementById('stick');
+let joyActive=false, joyCenter={x:0,y:0};
+function joyStart(){ joyActive=true; const r=joy.getBoundingClientRect(); joyCenter={x:r.left+r.width/2,y:r.top+r.height/2}; }
