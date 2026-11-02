@@ -506,3 +506,83 @@ function drawGates(){
     document.getElementById('game').appendChild(b);
   }
  }
+// ============================================================
+//  ВХОД
+// ============================================================
+function tryEnter(li, part){
+  const L = CONFIG.levels[li], g = L[part];
+  const st = gateStatus(li, part);
+  if(st === 'done'){ say('Мяу, я тут уже был'); return; }
+  if(st === 'blocked' || st === 'too-early' || st === 'wrong-phase'){
+    say(LINES.wall);
+    if(st === 'blocked') showMsg('🔒 Сначала утренние врата', `Открой «${L.morning.label}».`);
+    else if(st === 'too-early'){
+      const wait = g.day - currentDayOfLevel(li);
+      showMsg('⏳ Врата ещё не открыты', `«${g.label}» откроется на день ${g.day} уровня (сейчас день ${currentDayOfLevel(li)}). Осталось: ${wait} дн.`);
+    } else {
+      const need = part==='morning' ? '🌅 утром (00:00–11:59)' : '🌆 вечером (12:00–23:59)';
+      showMsg('🔒 Не та половина дня', `«${g.label}» открывается ${need}.`);
+    }
+    return;
+  }
+  const p = PROGRESS.levels[li];
+  if(p.startedAt == null) p.startedAt = Date.now();
+  p[part] = true;
+  saveProgress(PROGRESS);
+  if(part==='morning') unlockAch('first_morning');
+  if(part==='evening') unlockAch('first_evening');
+  drawGates(); updateHUD();
+  say('Мяу! Открыто');
+  if(p.morning && p.evening){
+    showMsg('🥣 Появилась миска!', 'Оба врата открыты! Найди миску и подойди к ней.');
+  } else {
+    const otherPart = part==='morning' ? 'evening' : 'morning';
+    const other = L[otherPart];
+    const phaseNeed = otherPart==='morning' ? 'утром' : 'вечером';
+    const wait = Math.max(0, other.day - currentDayOfLevel(li));
+    showMsg('✅ Врата открыты', `«${g.label}» пройдено!\n💾 Сохранено.\n\nТеперь нужны «${other.label}» — ${phaseNeed}${wait>0?`, через ${wait} дн.`:''}.`);
+  }
+}
+
+// ============================================================
+//  ЗВУКИ
+// ============================================================
+function playSound(kind){
+  if(kind === 'none') return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    if(kind === 'meow'){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine';
+      o.frequency.setValueAtTime(660, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      o.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.4);
+      g.gain.setValueAtTime(0.001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+      o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.6);
+    } else if(kind === 'nom'){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine';
+      o.frequency.setValueAtTime(300, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.2);
+      g.gain.setValueAtTime(0.001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.55);
+    } else if(kind === 'garmoshka'){
+      const notes=[523,659,784,659,523,784,1047];
+      notes.forEach((f,i)=>{
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='triangle';
+        o.frequency.setValueAtTime(f, ctx.currentTime + i*0.12);
+        g.gain.setValueAtTime(0.001, ctx.currentTime + i*0.12);
+        g.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + i*0.12 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.12 + 0.14);
+        o.connect(g).connect(ctx.destination);
+        o.start(ctx.currentTime + i*0.12); o.stop(ctx.currentTime + i*0.12 + 0.16);
+      });
+    }
+  } catch(e){}
+     }
