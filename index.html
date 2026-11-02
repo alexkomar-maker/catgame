@@ -656,3 +656,75 @@ function updateCat(){ cat.style.left=catPos.x+'%'; cat.style.top=catPos.y+'%'; u
 const joy=document.getElementById('joy'), stick=document.getElementById('stick');
 let joyActive=false, joyCenter={x:0,y:0};
 function joyStart(){ joyActive=true; const r=joy.getBoundingClientRect(); joyCenter={x:r.left+r.width/2,y:r.top+r.height/2}; }
+function joyMove(e){
+  if(!joyActive) return;
+  const p=e.touches?e.touches[0]:e;
+  let dx=p.clientX-joyCenter.x, dy=p.clientY-joyCenter.y;
+  const len=Math.hypot(dx,dy)||1, max=40;
+  if(len>max){dx=dx/len*max;dy=dy/len*max;}
+  stick.style.transform=`translate(${dx}px,${dy}px)`;
+  catPos.x=Math.max(5,Math.min(90,catPos.x+(dx/max)*0.5));
+  catPos.y=Math.max(15,Math.min(85,catPos.y+(dy/max)*0.5));
+  updateCat(); checkBowlProximity();
+}
+function joyEnd(){ joyActive=false; stick.style.transform='translate(0,0)'; }
+joy.addEventListener('touchstart',joyStart,{passive:true});
+joy.addEventListener('mousedown',joyStart);
+window.addEventListener('touchmove',joyMove,{passive:false});
+window.addEventListener('mousemove',joyMove);
+window.addEventListener('touchend',joyEnd);
+window.addEventListener('mouseup',joyEnd);
+document.addEventListener('keydown', e=>{
+  if(document.querySelector('.panel[style*="block"]')) return;
+  const s=0.7;
+  if(e.key==='ArrowLeft')catPos.x=Math.max(5,catPos.x-s);
+  if(e.key==='ArrowRight')catPos.x=Math.min(90,catPos.x+s);
+  if(e.key==='ArrowUp')catPos.y=Math.max(15,catPos.y-s);
+  if(e.key==='ArrowDown')catPos.y=Math.min(85,catPos.y+s);
+  updateCat(); checkBowlProximity();
+});
+function checkBowlProximity(){
+  const li = currentLevelIndex();
+  if(li === -1) return;
+  const p = PROGRESS.levels[li];
+  if(!(p.morning && p.evening) || p.bowl) return;
+  const b = CONFIG.levels[li].bowl.pos;
+  if(Math.abs(b[0]-catPos.x) < 12 && Math.abs(b[1]-catPos.y) < 12) feedCat(li);
+}
+
+function hideAllButtons(){ ['editorBtn','skinBtn','bowlBtn','communityBtn','achBtn'].forEach(id=>document.getElementById(id).style.display='none'); }
+function showAllButtons(){ ['editorBtn','skinBtn','bowlBtn','communityBtn','achBtn'].forEach(id=>document.getElementById(id).style.display='block'); }
+
+let edDraft = null;
+function openEditor(){
+  edDraft = JSON.parse(JSON.stringify(CONFIG));
+  renderEditor();
+  document.getElementById('editor').style.display='block';
+  document.getElementById('edToolbar').style.display='flex';
+  hideAllButtons();
+}
+function closeEditor(){
+  document.getElementById('editor').style.display='none';
+  document.getElementById('edToolbar').style.display='none';
+  showAllButtons(); edDraft=null;
+}
+function renderEditor(){
+  const wrap = document.getElementById('edList'); wrap.innerHTML='';
+  edDraft.levels.forEach((L,li)=>{
+    const box = document.createElement('div');
+    box.className='edlevel';
+    box.innerHTML = `
+      <div class="edrow"><label>Название</label><input value="${esc(L.name)}" oninput="edDraft.levels[${li}].name=this.value"></div>
+      ${gateEditorHTML(li,'morning',L.morning)}
+      ${gateEditorHTML(li,'evening',L.evening)}
+      <div class="gate-row">
+        <b>🥣 Миска</b>
+        <div class="edrow"><label>Иконка</label><input value="${esc(L.bowl?.icon||BOWL_CFG.icon)}" oninput="edDraft.levels[${li}].bowl.icon=this.value"></div>
+        <div class="edrow"><label>X,%</label><input type="number" min="5" max="90" value="${L.bowl?.pos?.[0]??50}" oninput="edDraft.levels[${li}].bowl.pos[0]=clamp(parseFloat(this.value)||5,5,90)"></div>
+        <div class="edrow"><label>Y,%</label><input type="number" min="15" max="85" value="${L.bowl?.pos?.[1]??50}" oninput="edDraft.levels[${li}].bowl.pos[1]=clamp(parseFloat(this.value)||15,15,85)"></div>
+      </div>
+      <div class="edbtns"><button class="btn-red" onclick="edDeleteLevel(${li})">🗑 Уровень</button></div>
+    `;
+    wrap.appendChild(box);
+  });
+}
