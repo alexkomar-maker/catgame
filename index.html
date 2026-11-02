@@ -385,3 +385,54 @@ function renderAch(){
     wrap.appendChild(el);
   });
  }
+// ============================================================
+//  ДНИ
+// ============================================================
+function trackDay(){
+  const today = new Date().toDateString();
+  if(!DAYS.days.includes(today)){
+    DAYS.days.push(today); saveDays(DAYS);
+    if(DAYS.days.length>=3) unlockAch('days_3');
+  }
+}
+
+// ============================================================
+//  РЕПЛИКИ
+// ============================================================
+let bubbleTimer=null;
+function say(text, ms=2200){
+  const b = document.getElementById('bubble');
+  b.textContent = text;
+  b.style.left = catPos.x+'%';
+  b.style.top  = (catPos.y - 6)+'%';
+  b.classList.add('show');
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(()=>b.classList.remove('show'), ms);
+}
+function updateBubblePosition(){
+  const b = document.getElementById('bubble');
+  if(!b.classList.contains('show')) return;
+  b.style.left = catPos.x+'%';
+  b.style.top  = (catPos.y - 6)+'%';
+}
+
+// ============================================================
+//  ВРАТА
+// ============================================================
+function gateStatus(li, part){
+  const p = PROGRESS.levels[li];
+  if(p[part]) return 'done';
+  if(part==='evening' && !p.morning) return 'blocked';
+  const g = CONFIG.levels[li][part];
+  if(g.day > currentDayOfLevel(li)) return 'too-early';
+  const active = isMorning() ? 'morning' : 'evening';
+  if(part !== active) return 'wrong-phase';
+  return 'available';
+}
+function currentLevelIndex(){
+  for(let i=0;i<CONFIG.levels.length;i++){
+    const p = PROGRESS.levels[i];
+    if(!(p.morning && p.evening && p.bowl)) return i;
+  }
+  return -1;
+}
