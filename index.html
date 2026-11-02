@@ -893,3 +893,135 @@ function bowlReset(){
   bowlDraft=JSON.parse(JSON.stringify(DEFAULT_BOWL_CFG));
   renderBowlSelect(); syncBowlInputs(); updateBowlPreview();
    }
+function openCommunity(){
+  document.getElementById('community').style.display='block';
+  document.getElementById('commToolbar').style.display='flex';
+  hideAllButtons();
+  renderLoadedList();
+  document.getElementById('commInput').focus();
+}
+function closeCommunity(){
+  document.getElementById('community').style.display='none';
+  document.getElementById('commToolbar').style.display='none';
+  showAllButtons();
+  document.getElementById('commInput').value='';
+  document.getElementById('commPreview').textContent='Здесь появится предпросмотр.';
+}
+function commClear(){
+  document.getElementById('commInput').value='';
+  document.getElementById('commPreview').textContent='Здесь появится предпросмотр.';
+}
+function commPreview(){
+  const raw = document.getElementById('commInput').value.trim();
+  const pv = document.getElementById('commPreview');
+  if(!raw){ pv.textContent='Здесь появится предпросмотр.'; return; }
+  if(raw === EASTER_EGG_CODE){ pv.innerHTML = `<span style="color:#ff44ff;font-weight:bold">🔐 Секретный код обнаружен.</span>\nНажми «Загрузить», чтобы активировать.`; return; }
+  if(raw.startsWith('cat1:')){
+    try {
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(raw.slice(5)))));
+      if(!Array.isArray(parsed.levels)) throw new Error('нет levels');
+      pv.textContent = `📦 Пакет\nУровней: ${parsed.levels.length}\n` + parsed.levels.map((L,i)=>`${i+1}. ${L.name}`).join('\n');
+    } catch(e){ pv.textContent='❌ Ошибка: '+e.message; }
+    return;
+  }
+  pv.textContent='❓ Неизвестный формат. Используй код от друга.';
+}
+function commLoad(){
+  const raw = document.getElementById('commInput').value.trim();
+  if(!raw) return;
+  if(raw === EASTER_EGG_CODE){
+    EASTER.garmoshka = true; saveEaster(EASTER);
+    drawGates(); updateHUD(); playSound('garmoshka');
+    say(LINES.garmoshka, 3500);
+    unlockAch('easter_egg');
+    showMsg('🕵️ Ты что-то нашёл...', 'Но пока не ясно, что это.\nСекрет откроется позже.');
+    document.getElementById('commInput').value='';
+    return;
+  }
+  if(raw.startsWith('cat1:')){
+    try {
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(raw.slice(5)))));
+      if(!Array.isArray(parsed.levels) || !parsed.levels.length) throw new Error('пустой пакет');
+      const pack = { id: Date.now(), name: parsed.levels[0].name + (parsed.levels.length>1?` +${parsed.levels.length-1}`:''), levels: parsed.levels, raw };
+      LOADED.push(pack); saveLoaded(LOADED);
+      renderLoadedList();
+      unlockAch('import_level');
+      showMsg('📥 Уровень загружен!', `Пакет: «${pack.name}»\nУровней: ${pack.levels.length}.`);
+      document.getElementById('commInput').value='';
+      document.getElementById('commPreview').textContent='Здесь появится предпросмотр.';
+    } catch(e){ alert('Ошибка: '+e.message); }
+    return;
+  }
+  alert('Поиск по нику доступен только с сервером.\nИспользуй код от друга (редактор → «Поделиться»).');
+}
+function renderLoadedList(){
+  const wrap=document.getElementById('commList'); wrap.innerHTML='';
+  if(!LOADED.length){ wrap.innerHTML='<div class="mini">Пока пусто.</div>'; return; }
+  LOADED.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='commCard';
+    d.innerHTML = `
+      <button class="del" onclick="event.stopPropagation();delLoaded(${i})">✖</button>
+      <h4>${p.name}</h4>
+      <div class="meta">Уровней: ${p.levels.length} · ${new Date(p.id).toLocaleString()}</div>
+      <div class="code">${(p.raw||'').slice(0,60)}...</div>
+    `;
+    d.onclick=()=>loadLoaded(i);
+    wrap.appendChild(d);
+  });
+}
+function loadLoaded(i){
+  const p = LOADED[i];
+  if(!confirm(`Заменить текущий конфиг уровней на «${p.name}»?\nПрогресс сбросится.`)) return;
+  CONFIG = { levels: p.levels }; saveConfig(CONFIG);
+  PROGRESS = { levels: [] }; reconcileProgress();
+  drawGates(); updateHUD();
+  showMsg('✅ Уровень применён!', `Игра переключена на «${p.name}».`);
+  closeCommunity();
+}
+function delLoaded(i){ LOADED.splice(i,1); saveLoaded(LOADED); renderLoadedList(); }
+
+// ============================================================
+//  PWA — ВСТРОЕННЫЙ MANIFEST + SERVICE WORKER (BLOB)
+// ============================================================
+(function setupPWA(){
+  const manifest = {
+    name:'Котик и Время', short_name:'Котик',
+    description:'Игра про котика, который проходит уровни по расписанию дня.',
+    start_url:'./', scope:'./', display:'standalone', orientation:'portrait',
+    background_color:'#0f0f1e', theme_color:'#0f0f1e', lang:'ru',
+    icons:[ { src:"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='#0f0f1e'/><text x='256' y='380' font-size='380' text-anchor='middle'>🐱</text></svg>`),
+        sizes:'512x512', type:'image/svg+xml', purpose:'any maskable' } ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const manifestURL = URL.createObjectURL(manifestBlob);
+  const link = document.createElement('link');
+  link.rel='manifest'; link.href=manifestURL;
+  document.head.appendChild(link);
+  if('serviceWorker' in navigator && location.protocol !== 'file:'){
+    const swCode = `self.addEventListener('install', e=>self.skipWaiting());self.addEventListener('activate', e=>self.clients.claim());self.addEventListener('fetch', e=>{});`;
+    const swBlob = new Blob([swCode], {type:'text/javascript'});
+    const swURL = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL).catch(()=>{});
+  }
+})();
+
+// ============================================================
+//  СТАРТ
+// ============================================================
+applySkin();
+updateCat();
+drawGates();
+updateHUD();
+updateAchBadge();
+trackDay();
+(function checkTimeAch(){
+  const h = getHour();
+  if(h >= 0 && h < 4) unlockAch('night_owl');
+  if(h >= 5 && h < 8) unlockAch('early_bird');
+})();
+setTimeout(()=>{ if(Math.random() < 0.05){ say(LINES.delta, 3500); unlockAch('delta_meow'); } }, 1200);
+setInterval(()=>{ updateHUD(); drawGates(); }, 15000);
+</script>
+</body>
+</html>
