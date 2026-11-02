@@ -239,3 +239,56 @@ const ACH_DEFS = [
   {id:'all_levels',    ic:'🏆', name:'Покоритель', desc:'Пройди все уровни в конфиге'},
   {id:'collector',     ic:'🌟', name:'Коллекционер', desc:'Открой 10 достижений'}
 ];
+// ============================================================
+//  КОНФИГ
+// ============================================================
+const DEFAULT_CONFIG = {
+  levels: [
+    { name:'Лесная тропа',
+      morning:{ day:1, icon:'🌲', pos:[25,28], label:'Утро дня 1 — опушка' },
+      evening:{ day:1, icon:'🌳', pos:[75,28], label:'Вечер дня 1 — чаща' },
+      bowl:{ pos:[50,55], icon:'🥣' } },
+    { name:'Река времени',
+      morning:{ day:1, icon:'🌊', pos:[25,58], label:'Утро дня 1 — брод' },
+      evening:{ day:2, icon:'⛵', pos:[75,58], label:'Вечер дня 2 — лодка' },
+      bowl:{ pos:[50,75], icon:'🥣' } }
+  ]
+};
+const DEFAULT_SKIN = { body:'#f2a65a', ear:'#e08040', eye:'#2ecc71', nose:'#e74c3c', stripes:false, tail:true, spot:false, size:70, image:null };
+const DEFAULT_BOWL_CFG = { icon:'🥣', size:56, glow:'#ffb84d', sound:'meow', victory:'Мяу вкусняшка', special:false };
+const LINES = {
+  wall:'Мяу тут стена', victory:'Мяу вкусняшка', delta:'Я уже скачал дельтамяу',
+  garmoshka:'Мяу! Миска-гармошка! 🪗', garmoshkaEat:'Мяу-у-у! Гармошечная вкусняшка! 🎵'
+};
+const EASTER_EGG_CODE = 'limni_official';
+
+// ============================================================
+//  ХРАНИЛИЩА
+// ============================================================
+function loadJSON(k, def){ try{const r=localStorage.getItem(k); if(r) return JSON.parse(r);}catch(e){} return JSON.parse(JSON.stringify(def)); }
+let CONFIG   = loadJSON('catConfig', DEFAULT_CONFIG);
+let PROGRESS = loadJSON('catProgress', { levels: [] });
+let SKIN     = loadJSON('catSkin', DEFAULT_SKIN);
+let BOWL_CFG = loadJSON('catBowlCfg', DEFAULT_BOWL_CFG);
+let LOADED   = loadJSON('catLoadedLevels', []);
+let EASTER   = loadJSON('catEaster', { garmoshka:false });
+let ACH      = loadJSON('catAchievements', { unlocked: {}, seen:{} });
+let DAYS     = loadJSON('catDaysPlayed', { days: [] });
+
+function saveConfig(c){ localStorage.setItem('catConfig', JSON.stringify(c)); }
+function saveProgress(p){ localStorage.setItem('catProgress', JSON.stringify(p)); }
+function saveSkin(s){ localStorage.setItem('catSkin', JSON.stringify(s)); }
+function saveBowlCfg(c){ localStorage.setItem('catBowlCfg', JSON.stringify(c)); }
+function saveLoaded(l){ localStorage.setItem('catLoadedLevels', JSON.stringify(l)); }
+function saveEaster(e){ localStorage.setItem('catEaster', JSON.stringify(e)); }
+function saveAch(a){ localStorage.setItem('catAchievements', JSON.stringify(a)); }
+function saveDays(d){ localStorage.setItem('catDaysPlayed', JSON.stringify(d)); }
+
+function reconcileProgress(){
+  const n = CONFIG.levels.length;
+  while(PROGRESS.levels.length < n) PROGRESS.levels.push({ startedAt:null, morning:false, evening:false, bowl:false });
+  if(PROGRESS.levels.length > n) PROGRESS.levels.length = n;
+  PROGRESS.levels.forEach(p=>{ if(p.bowl===undefined) p.bowl=false; });
+  saveProgress(PROGRESS);
+}
+reconcileProgress();
