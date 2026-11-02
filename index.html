@@ -292,3 +292,96 @@ function reconcileProgress(){
   saveProgress(PROGRESS);
 }
 reconcileProgress();
+// ============================================================
+//  ВРЕМЯ
+// ============================================================
+function getHour(){ return new Date().getHours(); }
+function isMorning(){ return getHour() < 12; }
+function daysSince(ts){
+  if(ts==null) return 0;
+  const a=new Date(ts), b=new Date();
+  const da=new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  const db=new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  return Math.floor((db-da)/86400000);
+}
+function phaseLabel(){ return isMorning() ? '🌅 Утро (00:00–11:59)' : '🌆 Вечер (12:00–23:59)'; }
+function timeToSwitch(){
+  const now=new Date(), t=new Date(now);
+  if(now.getHours()<12) t.setHours(12,0,0,0); else { t.setDate(t.getDate()+1); t.setHours(0,0,0,0); }
+  const d=Math.max(0,t-now);
+  return `до смены: ${Math.floor(d/3600000)}ч ${Math.floor((d%3600000)/60000)}м`;
+}
+function currentDayOfLevel(li){ const st=PROGRESS.levels[li].startedAt; return st==null?1:daysSince(st)+1; }
+
+// ============================================================
+//  ДОСТИЖЕНИЯ
+// ============================================================
+function unlockedCount(){ return Object.keys(ACH.unlocked).length; }
+function unlockAch(id){
+  if(ACH.unlocked[id]) return;
+  const def = ACH_DEFS.find(a=>a.id===id);
+  if(!def) return;
+  ACH.unlocked[id] = Date.now();
+  saveAch(ACH);
+  updateAchBadge();
+  showToast(id);
+  if(id !== 'collector' && unlockedCount() >= 10) unlockAch('collector');
+}
+function showToast(id){
+  const def = ACH_DEFS.find(a=>a.id===id); if(!def) return;
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span class="ic">${def.ic}</span>Достижение!<br>${def.name}`;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function updateAchBadge(){
+  const b = document.getElementById('achBadge');
+  const n = unlockedCount();
+  if(n>0){ b.textContent=n; b.style.display='block'; }
+  else b.style.display='none';
+}
+function resetAch(){
+  if(!confirm('Сбросить все достижения?')) return;
+  ACH = { unlocked:{}, seen:{} };
+  saveAch(ACH);
+  updateAchBadge();
+  renderAch();
+}
+function openAch(){
+  renderAch();
+  document.getElementById('achievements').style.display='block';
+  document.getElementById('achToolbar').style.display='flex';
+  hideAllButtons();
+}
+function closeAch(){
+  document.getElementById('achievements').style.display='none';
+  document.getElementById('achToolbar').style.display='none';
+  showAllButtons();
+}
+function renderAch(){
+  const total = ACH_DEFS.length;
+  const got = unlockedCount();
+  document.getElementById('achProgress').innerHTML =
+    `<b>${got}/${total}</b> открыто <span class="mini">— ${Math.round(got*100/total)}%</span>`;
+  const wrap = document.getElementById('achList');
+  wrap.innerHTML='';
+  ACH_DEFS.forEach(a=>{
+    const un = !!ACH.unlocked[a.id];
+    const isSecret = !!a.secret && !un;
+    const el = document.createElement('div');
+    el.className = 'ach' + (un?' unlocked':'');
+    const icon = isSecret ? '❓' : (un ? a.ic : '🔒');
+    const name = isSecret ? '???' : a.name;
+    const desc = isSecret ? 'Секретное достижение' : a.desc;
+    el.innerHTML = `
+      <div class="ic">${icon}</div>
+      <div class="info">
+        <h4>${name}${isSecret?' <span class="mini" style="color:#f1c40f">🔐</span>':''}</h4>
+        <p>${desc}</p>
+        ${un?`<div class="done">✅ Открыто ${new Date(ACH.unlocked[a.id]).toLocaleDateString()}</div>`:''}
+      </div>
+    `;
+    wrap.appendChild(el);
+  });
+ }
