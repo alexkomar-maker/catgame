@@ -839,3 +839,57 @@ function skinReset(){
   skinDraft = JSON.parse(JSON.stringify(DEFAULT_SKIN));
   syncSkinInputs(); updateSkinPreview();
  }
+const BOWL_ICONS = ['🥣','🍖','🐟','🥛','🍗','🍚','🍤','🥫','🍲','🧀'];
+let bowlDraft = null;
+function openBowlEditor(){
+  bowlDraft = JSON.parse(JSON.stringify(BOWL_CFG));
+  renderBowlSelect(); syncBowlInputs(); updateBowlPreview();
+  document.getElementById('bowlEditor').style.display='block';
+  document.getElementById('bowlToolbar').style.display='flex';
+  hideAllButtons();
+}
+function closeBowlEditor(){
+  document.getElementById('bowlEditor').style.display='none';
+  document.getElementById('bowlToolbar').style.display='none';
+  showAllButtons(); bowlDraft=null;
+}
+function renderBowlSelect(){
+  const wrap=document.getElementById('bowlSelect'); wrap.innerHTML='';
+  BOWL_ICONS.forEach(ic=>{
+    const b=document.createElement('button');
+    b.textContent=ic; if(ic===bowlDraft.icon) b.classList.add('active');
+    b.onclick=()=>{ bowlDraft.icon=ic; renderBowlSelect(); updateBowlPreview(); };
+    wrap.appendChild(b);
+  });
+}
+function syncBowlInputs(){
+  document.getElementById('bw_size').value = bowlDraft.size;
+  document.getElementById('bw_glow').value = bowlDraft.glow;
+  document.getElementById('bw_sound').value = bowlDraft.sound;
+  document.getElementById('bw_victory').value = bowlDraft.victory;
+  document.getElementById('v_bwsize').textContent = bowlDraft.size+'px';
+}
+function bowlChange(){
+  bowlDraft.size = parseInt(document.getElementById('bw_size').value);
+  bowlDraft.glow = document.getElementById('bw_glow').value;
+  bowlDraft.sound = document.getElementById('bw_sound').value;
+  bowlDraft.victory = document.getElementById('bw_victory').value;
+  document.getElementById('v_bwsize').textContent = bowlDraft.size+'px';
+  updateBowlPreview();
+}
+function updateBowlPreview(){
+  const pv=document.getElementById('bowlPreview');
+  pv.textContent=bowlDraft.icon;
+  pv.style.fontSize=(bowlDraft.size*1.6)+'px';
+  pv.style.filter=`drop-shadow(0 0 16px ${bowlDraft.glow})`;
+}
+function bowlSave(){
+  BOWL_CFG=bowlDraft; saveBowlCfg(BOWL_CFG); drawGates();
+  showMsg('💾 Миска сохранена',`Иконка: ${BOWL_CFG.icon}\nРеплика: «${BOWL_CFG.victory}»`);
+  closeBowlEditor();
+}
+function bowlReset(){
+  if(!confirm('Сбросить настройки миски?')) return;
+  bowlDraft=JSON.parse(JSON.stringify(DEFAULT_BOWL_CFG));
+  renderBowlSelect(); syncBowlInputs(); updateBowlPreview();
+   }
