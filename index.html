@@ -177,3 +177,65 @@
   <button class="btn-yellow" onclick="skinReset()">↺ Сброс</button>
   <button class="btn-gray" onclick="closeSkin()">✖ Закрыть</button>
 </div>
+<div id="bowlEditor" class="panel">
+  <h2>🥣 Редактор миски</h2>
+  <div id="bowlPreview">🥣</div>
+  <div class="mini" style="text-align:center">Выбери иконку:</div>
+  <div class="bowlSelect" id="bowlSelect"></div>
+  <div class="skinrow"><label>Размер,px</label><input type="range" min="40" max="120" id="bw_size" oninput="bowlChange()"><span class="skinval" id="v_bwsize"></span></div>
+  <div class="skinrow"><label>Свечение</label><input type="color" id="bw_glow" oninput="bowlChange()"></div>
+  <div class="skinrow"><label>Звук</label>
+    <select id="bw_sound" onchange="bowlChange()" style="flex:1;background:#0f0f1e;border:1px solid #333;color:#fff;padding:8px;border-radius:8px">
+      <option value="meow">Мяу</option>
+      <option value="nom">Ням-ням</option>
+      <option value="garmoshka">🪗 Гармошка</option>
+      <option value="none">Без звука</option>
+    </select>
+  </div>
+  <div class="skinrow"><label>Реплика победы</label><input id="bw_victory" oninput="bowlChange()" style="flex:1;background:#0f0f1e;border:1px solid #333;color:#fff;padding:8px;border-radius:8px"></div>
+  <div style="height:60px"></div>
+</div>
+<div id="bowlToolbar" class="toolbar" style="display:none">
+  <button class="btn-green" onclick="bowlSave()">💾 Сохранить</button>
+  <button class="btn-yellow" onclick="bowlReset()">↺ Сброс</button>
+  <button class="btn-gray" onclick="closeBowlEditor()">✖ Закрыть</button>
+</div>
+
+<div id="community" class="panel">
+  <h2>🌐 Сообщество уровней</h2>
+  <div class="mini">Введи код уровня из редактора → «Поделиться».</div>
+  <input id="commInput" placeholder="Вставь код cat1:... или секретный код" oninput="commPreview()">
+  <div class="edbtns">
+    <button class="btn-teal" onclick="commLoad()">🔍 Загрузить</button>
+    <button class="btn-gray" onclick="commClear()">✖ Очистить</button>
+  </div>
+  <div id="commPreview">Здесь появится предпросмотр.</div>
+  <h3 style="margin-top:20px;font-size:15px;color:#ffd166">📚 Загруженные уровни</h3>
+  <div class="commList" id="commList"></div>
+  <div style="height:60px"></div>
+</div>
+<div id="commToolbar" class="toolbar" style="display:none">
+  <button class="btn-gray" onclick="closeCommunity()">✖ Закрыть</button>
+</div>
+
+<script>
+// ============================================================
+//  ДОСТИЖЕНИЯ
+// ============================================================
+const ACH_DEFS = [
+  {id:'first_morning', ic:'🌅', name:'Ранняя пташка', desc:'Открой первые утренние врата'},
+  {id:'first_evening', ic:'🌆', name:'Вечерний гость', desc:'Открой первые вечерние врата'},
+  {id:'first_level',   ic:'🥇', name:'Первый шаг', desc:'Пройди свой первый уровень полностью'},
+  {id:'bowl_eat',      ic:'🍖', name:'Ням-ням', desc:'Покорми котика из миски'},
+  {id:'cat_custom',    ic:'🎨', name:'Модный котик', desc:'Настрой своего котика'},
+  {id:'editor_use',    ic:'🛠️', name:'Мастер уровней', desc:'Сохрани изменения в редакторе уровней'},
+  {id:'night_owl',     ic:'🌙', name:'Полуночник', desc:'Зайди в игру после 00:00 до 04:00'},
+  {id:'early_bird',    ic:'🐦', name:'Ранний червячок', desc:'Зайди в игру в 05:00–07:00'},
+  {id:'days_3',        ic:'📅', name:'День за днём', desc:'Играй 3 разных дня подряд'},
+  {id:'delta_meow',    ic:'🐱', name:'Дельтамяу', desc:'Услышь реплику про дельтамяу'},
+  {id:'easter_egg',    ic:'🕵️', name:'Искатель тайн', desc:'Ты нашёл то, что скрыто от других', secret:true},
+  {id:'share_level',   ic:'📤', name:'Поделился', desc:'Скопируй код уровня для друга'},
+  {id:'import_level',  ic:'📥', name:'Импортёр', desc:'Загрузи уровень другого игрока'},
+  {id:'all_levels',    ic:'🏆', name:'Покоритель', desc:'Пройди все уровни в конфиге'},
+  {id:'collector',     ic:'🌟', name:'Коллекционер', desc:'Открой 10 достижений'}
+];
