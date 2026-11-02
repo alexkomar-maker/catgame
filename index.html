@@ -79,3 +79,101 @@
   .skinrow input[type=color]{width:56px;height:40px;border:none;background:none;border-radius:8px;cursor:pointer}
   .skinrow input[type=range]{flex:1}
   .skinval{min-width:36px;text-align:right;font-size:12px;opacity:.7}
+  #skinUpload{width:100%;margin-top:10px;background:#0f0f1e;border:1px dashed #555;color:#aaa;padding:14px;border-radius:10px;font-size:13px;text-align:center}
+  #bowlPreview{width:180px;height:180px;margin:0 auto 12px;background:#111124;border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid #ffffff22;font-size:100px}
+  .bowlSelect{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .bowlSelect button{width:56px;height:56px;border-radius:12px;border:2px solid #333;background:#1a1a2e;font-size:28px;cursor:pointer}
+  .bowlSelect button.active{border-color:#e67e22;background:#3a2a10}
+  #commInput{width:100%;background:#0f0f1e;border:1px solid #444;color:#fff;padding:14px;border-radius:12px;font-size:14px;font-family:monospace}
+  #commPreview{background:#111124;border-radius:12px;padding:14px;margin-top:12px;font-size:13px;line-height:1.5;min-height:60px;border:1px solid #ffffff1a;white-space:pre-line}
+  .commList{margin-top:12px}
+  .commCard{background:#1a1a2e;border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid #ffffff1a;cursor:pointer}
+  .commCard h4{margin:0 0 4px;font-size:14px;color:#ffd166}
+  .commCard .meta{font-size:11px;opacity:.6}
+  .commCard .code{font-size:10px;opacity:.5;font-family:monospace;word-break:break-all;margin-top:6px}
+  .commCard .del{float:right;background:#e74c3c;border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
+  #achList .ach{background:#1a1a2e;border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid #ffffff1a;display:flex;gap:12px;align-items:center;opacity:.6}
+  #achList .ach.unlocked{opacity:1;border-color:#f1c40f;background:linear-gradient(135deg,#1a1a2e,#3a2a10)}
+  #achList .ach .ic{font-size:32px;min-width:44px;text-align:center}
+  #achList .ach .info{flex:1}
+  #achList .ach h4{margin:0 0 2px;font-size:14px}
+  #achList .ach.unlocked h4{color:#f1c40f}
+  #achList .ach p{margin:0;font-size:12px;opacity:.8;line-height:1.3}
+  #achList .ach .done{color:#2ecc71;font-size:12px;font-weight:bold;margin-top:4px}
+  #achProgress{background:#111124;border-radius:12px;padding:12px;margin-bottom:16px;border:1px solid #f1c40f55}
+  #achProgress b{color:#f1c40f}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="hud">
+    <div>
+      <div id="timeInfo">🕐 --:--</div>
+      <div id="timeLeft"></div>
+    </div>
+    <div id="levelInfo">Уровень 1/2</div>
+  </div>
+  <div id="phase">—</div>
+  <div id="chapterBox">—</div>
+  <div id="bubble"></div>
+  <div id="toast"></div>
+  <div id="cat"></div>
+  <div id="msg">
+    <h3 id="msgTitle"></h3>
+    <p id="msgText"></p>
+    <button onclick="closeMsg()">ОК</button>
+  </div>
+  <div class="joystick" id="joy"><div class="stick" id="stick"></div></div>
+  <button id="achBtn" onclick="openAch()">🏆<span class="badge" id="achBadge">0</span></button>
+  <button id="communityBtn" onclick="openCommunity()">🌐</button>
+  <button id="bowlBtn" onclick="openBowlEditor()">🥣</button>
+  <button id="skinBtn" onclick="openSkin()">🎨</button>
+  <button id="editorBtn" onclick="openEditor()">⚙️</button>
+</div>
+
+<div id="achievements" class="panel">
+  <h2>🏆 Достижения</h2>
+  <div id="achProgress"></div>
+  <div id="achList"></div>
+  <div style="height:60px"></div>
+</div>
+<div id="achToolbar" class="toolbar" style="display:none">
+  <button class="btn-yellow" onclick="resetAch()">↺ Сброс</button>
+  <button class="btn-gray" onclick="closeAch()">✖ Закрыть</button>
+</div>
+
+<div id="editor" class="panel">
+  <h2>🛠️ Редактор уровней</h2>
+  <div class="mini">Конфиг — <code>catConfig</code>, прогресс — <code>catProgress</code>.</div>
+  <div id="edList"></div>
+  <div style="height:60px"></div>
+</div>
+<div id="edToolbar" class="toolbar" style="display:none">
+  <button class="btn-green" onclick="edAddLevel()">➕ Уровень</button>
+  <button class="btn-blue" onclick="edSave()">💾 Применить</button>
+  <button class="btn-yellow" onclick="edExport()">📤 Экспорт</button>
+  <button class="btn-yellow" onclick="edImport()">📥 Импорт</button>
+  <button class="btn-teal" onclick="edShareLevel()">🌐 Поделиться</button>
+  <button class="btn-red" onclick="edResetProgress()">🧹 Сброс</button>
+  <button class="btn-gray" onclick="closeEditor()">✖ Закрыть</button>
+</div>
+
+<div id="skin" class="panel">
+  <h2>🎨 Свой котик</h2>
+  <div id="skinPreview"></div>
+  <div class="skinrow"><label>Шерсть</label><input type="color" id="sk_body" oninput="skinChange()"></div>
+  <div class="skinrow"><label>Ушки</label><input type="color" id="sk_ear" oninput="skinChange()"></div>
+  <div class="skinrow"><label>Глаза</label><input type="color" id="sk_eye" oninput="skinChange()"></div>
+  <div class="skinrow"><label>Нос</label><input type="color" id="sk_nose" oninput="skinChange()"></div>
+  <div class="skinrow"><label>Полоски</label><input type="checkbox" id="sk_stripes" onchange="skinChange()" style="width:22px;height:22px"></div>
+  <div class="skinrow"><label>Хвост</label><input type="checkbox" id="sk_tail" onchange="skinChange()" style="width:22px;height:22px"></div>
+  <div class="skinrow"><label>Пятнышки</label><input type="checkbox" id="sk_spot" onchange="skinChange()" style="width:22px;height:22px"></div>
+  <div class="skinrow"><label>Размер</label><input type="range" min="50" max="100" id="sk_size" oninput="skinChange()"><span class="skinval" id="v_size"></span></div>
+  <label id="skinUpload">📷 Или загрузи картинку котика (PNG)<input type="file" accept="image/*" id="skinFile" style="display:none"></label>
+  <div style="height:60px"></div>
+</div>
+<div id="skinToolbar" class="toolbar" style="display:none">
+  <button class="btn-green" onclick="skinSave()">💾 Сохранить</button>
+  <button class="btn-yellow" onclick="skinReset()">↺ Сброс</button>
+  <button class="btn-gray" onclick="closeSkin()">✖ Закрыть</button>
+</div>
