@@ -785,3 +785,57 @@ function edResetProgress(){
   PROGRESS = { levels: [] }; reconcileProgress(); drawGates(); updateHUD();
   alert('Прогресс сброшен');
   }
+let skinDraft = null;
+function openSkin(){
+  skinDraft = JSON.parse(JSON.stringify(SKIN));
+  syncSkinInputs(); updateSkinPreview();
+  document.getElementById('skin').style.display='block';
+  document.getElementById('skinToolbar').style.display='flex';
+  hideAllButtons();
+}
+function closeSkin(){
+  document.getElementById('skin').style.display='none';
+  document.getElementById('skinToolbar').style.display='none';
+  showAllButtons(); skinDraft=null;
+}
+function syncSkinInputs(){
+  document.getElementById('sk_body').value = skinDraft.body;
+  document.getElementById('sk_ear').value = skinDraft.ear;
+  document.getElementById('sk_eye').value = skinDraft.eye;
+  document.getElementById('sk_nose').value = skinDraft.nose;
+  document.getElementById('sk_stripes').checked = !!skinDraft.stripes;
+  document.getElementById('sk_tail').checked = !!skinDraft.tail;
+  document.getElementById('sk_spot').checked = !!skinDraft.spot;
+  document.getElementById('sk_size').value = skinDraft.size;
+  document.getElementById('v_size').textContent = skinDraft.size+'px';
+}
+function skinChange(){
+  skinDraft.body = document.getElementById('sk_body').value;
+  skinDraft.ear = document.getElementById('sk_ear').value;
+  skinDraft.eye = document.getElementById('sk_eye').value;
+  skinDraft.nose = document.getElementById('sk_nose').value;
+  skinDraft.stripes = document.getElementById('sk_stripes').checked;
+  skinDraft.tail = document.getElementById('sk_tail').checked;
+  skinDraft.spot = document.getElementById('sk_spot').checked;
+  skinDraft.size = parseInt(document.getElementById('sk_size').value);
+  document.getElementById('v_size').textContent = skinDraft.size+'px';
+  updateSkinPreview();
+}
+function updateSkinPreview(){ document.getElementById('skinPreview').innerHTML = catSVG(skinDraft); }
+document.getElementById('skinUpload').addEventListener('click', ()=>document.getElementById('skinFile').click());
+document.getElementById('skinFile').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ skinDraft.image=r.result; updateSkinPreview(); };
+  r.readAsDataURL(f);
+});
+function skinSave(){
+  SKIN = skinDraft; saveSkin(SKIN); applySkin();
+  unlockAch('cat_custom');
+  showMsg('💾 Котик сохранён','Твой котик обновлён.');
+  closeSkin();
+}
+function skinReset(){
+  if(!confirm('Сбросить котика?')) return;
+  skinDraft = JSON.parse(JSON.stringify(DEFAULT_SKIN));
+  syncSkinInputs(); updateSkinPreview();
+ }
